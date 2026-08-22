@@ -41,7 +41,7 @@ This is a pragmatic Laravel monolith. Eloquent is used directly for local persis
 Docker with Compose is the only host requirement.
 
 ```bash
-git clone https://github.com/OWNER/ledger-lab.git
+git clone https://github.com/Gabriel-PereiraL/ledger-lab.git
 cd ledger-lab
 docker compose build
 docker compose run --rm app composer install
