@@ -1,8 +1,24 @@
 # LedgerLab
 
-LedgerLab is a **study/portfolio project designed to demonstrate backend engineering concepts in a financial domain** with PHP and Laravel. It models an internal wallet ledger; it does not move real money, implement PIX, or claim production banking readiness.
+A small Laravel backend that moves fictitious funds between internal wallets and keeps an auditable ledger of every operation.
 
-The small feature set goes deep on consistency, concurrent spending, idempotent APIs, compensating reversals, signed webhooks, queues, reconciliation, and engineering evidence.
+This is a deliberately small technical project. It exists to make public how I use Laravel to handle transaction boundaries, concurrent spending, idempotent APIs, compensating reversals, signed webhooks, queues and reconciliation.
+
+It is not a banking product and it does not move real money or implement PIX. Every mechanism is here because it protects a specific behavior that the tests can demonstrate.
+
+[![CI](https://github.com/Gabriel-PereiraL/ledger-lab/actions/workflows/ci.yml/badge.svg)](https://github.com/Gabriel-PereiraL/ledger-lab/actions/workflows/ci.yml)
+
+---
+
+## What it demonstrates
+
+1. Post an internal transfer as one atomic database operation.
+2. Keep an append-only, balanced explanation for every balance change.
+3. Serialize competing spends so the same funds cannot be used twice.
+4. Return the original operation on a compatible retry and reject an incompatible idempotency-key reuse.
+5. Reverse a posted transfer through new compensating entries rather than editing history.
+6. Accept signed provider events, deduplicate them and process them asynchronously.
+7. Detect missing, divergent and incorrectly stated provider operations through reconciliation.
 
 ## Core invariants
 
