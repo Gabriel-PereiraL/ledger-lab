@@ -29,6 +29,6 @@ class NotifyTransferPosted implements ShouldQueue
 
     public function failed(?\Throwable $exception): void
     {
-        Log::error('transfer.notification.failed', ['transfer_id' => $this->transferId, 'error_type' => $exception?->getMessage() ? $exception::class : null]);
+        Log::error('transfer.notification.failed', ['transfer_id' => $this->transferId, 'error_type' => $exception ? $exception::class : null]);
     }
 }

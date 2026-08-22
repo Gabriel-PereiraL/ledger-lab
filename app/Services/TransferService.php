@@ -66,6 +66,17 @@ final class TransferService
 
         return DB::transaction(function () use ($client, $original, $idempotencyKey): Transfer {
             $locked = Transfer::query()->lockForUpdate()->findOrFail($original->id);
+            $existing = Transfer::query()
+                ->where('api_client_id', $client->id)
+                ->where('idempotency_key', $idempotencyKey)
+                ->first();
+            if ($existing) {
+                if ($existing->reverses_transfer_id === $locked->id) {
+                    return $existing->load('entries');
+                }
+
+                throw new IdempotencyConflict('Idempotency key was already used with another request.');
+            }
             if ($locked->reversal()->exists()) {
                 throw new TransferNotAllowed('Transfer was already reversed.');
             }

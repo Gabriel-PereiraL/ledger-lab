@@ -80,7 +80,9 @@ class TransferTest extends TestCase
     public function test_reversal_uses_compensating_entries_and_cannot_repeat(): void
     {
         $id = $this->postTransfer()->json('data.id');
-        $this->withHeaders(['X-Api-Key' => $this->token, 'Idempotency-Key' => 'reverse-1'])->postJson("/api/transfers/$id/reversal")->assertCreated()->assertJsonPath('data.reverses_transfer_id', $id);
+        $first = $this->withHeaders(['X-Api-Key' => $this->token, 'Idempotency-Key' => 'reverse-1'])->postJson("/api/transfers/$id/reversal")->assertCreated()->assertJsonPath('data.reverses_transfer_id', $id)->json('data.id');
+        $retry = $this->withHeaders(['X-Api-Key' => $this->token, 'Idempotency-Key' => 'reverse-1'])->postJson("/api/transfers/$id/reversal")->assertCreated()->json('data.id');
+        $this->assertSame($first, $retry);
         $this->assertSame(10000, $this->source->fresh()->balance_cents);
         $this->assertSame(0, $this->destination->fresh()->balance_cents);
         $this->withHeaders(['X-Api-Key' => $this->token, 'Idempotency-Key' => 'reverse-2'])->postJson("/api/transfers/$id/reversal")->assertUnprocessable();
@@ -95,5 +97,18 @@ class TransferTest extends TestCase
         $payload = $this->payload();
         $payload['destination_wallet_id'] = $wallet->id;
         $this->withHeaders(['X-Api-Key' => $this->token, 'Idempotency-Key' => 'ownership'])->postJson('/api/transfers', $payload)->assertUnprocessable();
+    }
+
+    public function test_secondary_job_failure_does_not_change_posted_financial_state(): void
+    {
+        Queue::fake();
+        $id = $this->postTransfer('job-failure')->assertCreated()->json('data.id');
+
+        (new NotifyTransferPosted($id))->failed(new \RuntimeException('simulated notification outage'));
+
+        $this->assertDatabaseHas('transfers', ['id' => $id, 'status' => 'posted']);
+        $this->assertSame(7500, $this->source->fresh()->balance_cents);
+        $this->assertSame(2500, $this->destination->fresh()->balance_cents);
+        $this->assertDatabaseCount('ledger_entries', 2);
     }
 }
