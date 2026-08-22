@@ -1,0 +1,57 @@
+services:
+  app:
+    build: .
+    working_dir: /var/www/html
+    command: php artisan serve --host=0.0.0.0 --port=8000
+    ports: ["8000:8000"]
+    volumes: [".:/var/www/html"]
+    environment: &app-env
+      APP_ENV: local
+      APP_DEBUG: "true"
+      APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: ledger_lab
+      DB_USERNAME: ledger_lab
+      DB_PASSWORD: ledger_lab
+      CACHE_STORE: redis
+      QUEUE_CONNECTION: redis
+      REDIS_HOST: redis
+      PROVIDER_WEBHOOK_SECRET: local-development-secret
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+  worker:
+    build: .
+    working_dir: /var/www/html
+    command: php artisan queue:work --tries=3 --backoff=1
+    volumes: [".:/var/www/html"]
+    environment: *app-env
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ledger_lab
+      POSTGRES_USER: ledger_lab
+      POSTGRES_PASSWORD: ledger_lab
+    ports: ["5432:5432"]
+    volumes: ["postgres-data:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ledger_lab -d ledger_lab"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+  redis:
+    image: redis:8-alpine
+    ports: ["6379:6379"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+volumes:
+  postgres-data:
+
