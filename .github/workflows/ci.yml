@@ -1,0 +1,36 @@
+name: CI
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env: {POSTGRES_DB: ledger_lab, POSTGRES_USER: ledger_lab, POSTGRES_PASSWORD: ledger_lab}
+        ports: [5432:5432]
+        options: >-
+          --health-cmd "pg_isready -U ledger_lab -d ledger_lab"
+          --health-interval 2s --health-timeout 3s --health-retries 20
+    env:
+      APP_ENV: testing
+      APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+      DB_CONNECTION: pgsql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_DATABASE: ledger_lab
+      DB_USERNAME: ledger_lab
+      DB_PASSWORD: ledger_lab
+      CACHE_STORE: array
+      QUEUE_CONNECTION: sync
+      PROVIDER_WEBHOOK_SECRET: ci-test-secret
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with: {php-version: '8.4', extensions: 'pdo_pgsql, pcntl', coverage: none}
+      - uses: ramsey/composer-install@v3
+      - run: php artisan migrate:fresh --force
+      - run: composer format:check
+      - run: composer analyse
+      - run: php artisan test
