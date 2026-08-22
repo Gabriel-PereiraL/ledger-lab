@@ -37,7 +37,6 @@ services:
       POSTGRES_DB: ledger_lab
       POSTGRES_USER: ledger_lab
       POSTGRES_PASSWORD: ledger_lab
-    ports: ["5432:5432"]
     volumes: ["postgres-data:/var/lib/postgresql/data"]
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ledger_lab -d ledger_lab"]
@@ -54,4 +53,3 @@ services:
       retries: 20
 volumes:
   postgres-data:
-

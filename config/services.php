@@ -1,6 +1,9 @@
 <?php
 
 return [
+    'provider' => [
+        'webhook_secret' => env('PROVIDER_WEBHOOK_SECRET'),
+    ],
 
     /*
     |--------------------------------------------------------------------------
