@@ -1,5 +1,7 @@
 # LedgerLab
 
+Webhook inbox recovery is durable: duplicate deliveries redispatch pending events, and the scheduler scans unprocessed inbox rows every minute. Job processing remains idempotent under duplicate enqueue through the row lock and `processed_at` terminal marker.
+
 A small Laravel backend that moves fictitious funds between internal wallets and keeps an auditable ledger of every operation.
 
 This is a deliberately small technical project. It exists to make public how I use Laravel to handle transaction boundaries, concurrent spending, idempotent APIs, compensating reversals, signed webhooks, queues and reconciliation.

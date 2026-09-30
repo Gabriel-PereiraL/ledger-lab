@@ -19,6 +19,11 @@ class ProviderWebhookController extends Controller
         try {
             $event = WebhookEvent::query()->create(['external_event_id' => $payload['id'], 'type' => $payload['type'], 'payload' => $payload]);
         } catch (UniqueConstraintViolationException) {
+            $event = WebhookEvent::query()->where('external_event_id', $payload['id'])->first();
+            if ($event && ! $event->processed_at) {
+                ProcessProviderWebhook::dispatch($event->id)->afterCommit();
+            }
+
             return response()->json(['status' => 'duplicate']);
         }
         ProcessProviderWebhook::dispatch($event->id)->afterCommit();

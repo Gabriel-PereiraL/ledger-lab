@@ -43,13 +43,13 @@ class WebhookTest extends TestCase
         $this->assertDatabaseCount('webhook_events', 0);
     }
 
-    public function test_duplicate_event_is_acknowledged_without_another_job(): void
+    public function test_duplicate_pending_event_is_acknowledged_and_redispatched(): void
     {
         Queue::fake();
         $p = $this->payload();
         $this->withHeader('X-Provider-Signature', $this->signature($p))->postJson('/api/webhooks/provider', $p)->assertAccepted();
         $this->withHeader('X-Provider-Signature', $this->signature($p))->postJson('/api/webhooks/provider', $p)->assertOk()->assertJsonPath('status', 'duplicate');
-        Queue::assertPushed(ProcessProviderWebhook::class, 1);
+        Queue::assertPushed(ProcessProviderWebhook::class, 2);
     }
 
     public function test_unexpected_event_retries_without_marking_processed(): void
@@ -57,8 +57,12 @@ class WebhookTest extends TestCase
         $p = $this->payload('unknown');
         $this->withHeader('X-Provider-Signature', $this->signature($p))->postJson('/api/webhooks/provider', $p);
         $event = WebhookEvent::query()->firstOrFail();
-        $this->expectException(\UnexpectedValueException::class);
-        (new ProcessProviderWebhook($event->id))->handle();
+        try {
+            (new ProcessProviderWebhook($event->id))->handle();
+            $this->fail('Unsupported events must be retried.');
+        } catch (\UnexpectedValueException) {
+            // Expected: the queue will retry and the event remains pending.
+        }
         $this->assertNull($event->fresh()->processed_at);
     }
 }
