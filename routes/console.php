@@ -1,10 +1,10 @@
 <?php
 
+use App\Jobs\ProcessProviderWebhook;
+use App\Models\WebhookEvent;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
-use App\Jobs\ProcessProviderWebhook;
-use App\Models\WebhookEvent;
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
